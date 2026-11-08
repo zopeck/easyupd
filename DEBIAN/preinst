@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    install|upgrade)
+        echo "[*] Verificando conectividad antes de la instalación de EasyUpd..."
+        if ! curl -Is --connect-timeout 3 http://www.google.com >/dev/null 2>&1; then
+            echo "\n[!] ERROR DE CONEXIÓN: No se detecta salida a Internet."
+            echo "Sugerencia: Verifica tu red e intenta nuevamente cuando dispongas de acceso.\n"
+            exit 1
+        fi
+        echo "✔ Conexión a Internet verificada.\n"
+    ;;
+esac
+
+exit 0

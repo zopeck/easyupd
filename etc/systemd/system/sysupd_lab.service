@@ -1,0 +1,13 @@
+[Unit]
+Description=Servicio de Chequeo Proactivo EasyUpd (Backend Root)
+After=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/sysupd-daemon_lab.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

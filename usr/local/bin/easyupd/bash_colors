@@ -1,0 +1,31 @@
+bash_colors() {
+	# --- LIBRERÍA DE COLORES PARA BASH ---
+
+	# Reset (Para volver al color normal)
+	export nc='\033[0m'
+
+	# Colores Estándar (Normales)
+	export black='\033[0;30m'
+	export red='\033[0;31m'
+	export green='\033[0;32m'
+	export yellow='\033[0;33m'
+	export blue='\033[0;34m'
+	export purple='\033[0;35m'
+	export cyan='\033[0;36m'
+	export white='\033[0;37m'
+
+	# Colores en Negrita (Bold) - Los que más resaltan
+	export Bblack='\033[1;30m'
+	export Bred='\033[1;31m'
+	export Bgreen='\033[1;32m'
+	export Byellow='\033[1;33m'
+	export Bblue='\033[1;34m'
+	export Bpurple='\033[1;35m'
+	export Bcyan='\033[1;36m'
+	export Bwhite='\033[1;37m'
+
+	# Fondos (Backgrounds) - Útiles para alertas críticas
+	export bg_red='\033[41m'
+	export bg_green='\033[42m'
+	export bg_yellow='\033[43m'
+}

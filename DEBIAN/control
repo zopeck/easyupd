@@ -1,0 +1,12 @@
+Package: easyupd
+Version: 1.0-1
+Section: admin
+Priority: optional
+Architecture: amd64
+Depends: yad (>= 12.0), fzf, timeshift, at, fonts-symbola, wmctrl, curl, psmisc, systemd, libnotify-bin
+Recommends: gnome-shell-extension-appindicator | ayatana-indicator-application | kde-config-systray
+Maintainer: Mark <zopeck@gmail.com>
+Description: Sistema modular de mantenimiento y actualizacion continua para Debian.
+ EasyUpd gestiona revisiones desatendidas de APT mediante un demonio residente
+ de fondo, notificador en la bandeja del sistema (XFCE/GNOME/KDE/YAD), snapshots
+ preventivos inteligentes con Timeshift y recuperacion automatica ante fallos de espejos.

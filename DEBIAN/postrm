@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    purge|remove)
+        echo "[*] Limpiando servicios y registros de EasyUpd..."
+        systemctl stop sysupd_lab.service 2>/dev/null || true
+        systemctl disable sysupd_lab.service 2>/dev/null || true
+        rm -f /etc/systemd/system/sysupd_lab.service
+        systemctl daemon-reload
+        
+        # Opcional: limpiar directorios de caché si es purgado completo
+        if [ "$1" = "purge" ]; then
+            rm -rf /var/cache/easyupd_lab
+        fi
+    ;;
+esac
+
+exit 0

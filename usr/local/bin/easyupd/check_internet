@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# /usr/local/bin/easyupd/check_internet
+# Función de verificación silenciosa de conectividad para EasyUpd
+
+check_internet() {
+    # Probar resolución o conectividad IP rápida (1 paquete, espera máx 2 seg)
+    if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}

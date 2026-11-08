@@ -1,0 +1,13 @@
+check_os_family(){
+    if ! grep -qiE 'ID(_LIKE)?=.*debian' /etc/os-release; then
+        local NOMBRE_OS
+        NOMBRE_OS=$(grep -E '^NAME=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
+        echo -e "${red}------------------------------------------"
+        echo -e "Sistema detectado: ${NOMBRE_OS:-Desconocido}"
+        echo -e "Este sistema no es de la familia \"Debian\""
+        echo -e "Saliendo..."
+        echo -e "------------------------------------------${nc}"
+        return 1
+    fi
+    return 0
+}

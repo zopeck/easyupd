@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=EasyUpd Lab
+GenericName=Notificador Lab de Actualizaciones
+Comment=Lab Monitoreo y gestión de actualizaciones del sistema
+Exec=/usr/local/bin/easyupd-tray_lab.sh
+Icon=system-software-update
+Terminal=false
+Categories=System;Settings;
+Keywords=easyupd;EasyUpd;actualizacion;update;system;

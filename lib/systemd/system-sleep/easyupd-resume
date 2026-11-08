@@ -1,0 +1,17 @@
+#!/bin/sh
+#case "$1" in
+#    post)
+        # Forzamos al demonio a despertar de su 'sleep' para que reevalúe $(date +%s)
+#        pkill -SIGUSR1 -f "/usr/local/bin/sysupd-daemon_lab.sh" 2>/dev/null
+#        ;;
+#esac
+
+# Cambio hecho para identificar evento tras suspension, en caso de fallar, descomentar
+# el de arriba y aplicarlo...
+case "$1" in
+    post)
+        # SIGUSR2 identifica específicamente un evento de reanudación tras suspensión,
+        # distinto del SIGUSR1 usado para forzados manuales desde la interfaz de usuario.
+        pkill -SIGUSR2 -f "/usr/local/bin/sysupd-daemon_lab.sh" 2>/dev/null
+        ;;
+esac

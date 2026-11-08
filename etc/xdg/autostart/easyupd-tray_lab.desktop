@@ -1,0 +1,12 @@
+sudo bash -c 'cat << EOF > /etc/xdg/autostart/easyupd-tray_lab.desktop
+[Desktop Entry]
+Type=Application
+Name=EasyUpd Tray Lab
+Comment=Lab Notificador de actualizaciones del sistema EasyUpd
+Exec=/usr/local/bin/easyupd-tray_lab.sh
+Icon=easyupd_green
+Terminal=false
+Categories=System;TrayIcon;
+X-GNOME-Autostart-enabled=true
+StartupNotify=false
+EOF'

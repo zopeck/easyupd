@@ -1,0 +1,98 @@
+#!/bin/sh
+set -e
+
+# Colores para salida en consola (opcional para terminales que lo soporten)
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[1;33m'
+nc='\033[0m'
+
+case "$1" in
+    configure)
+        # 1. Crear grupo dedicado easyupd
+        if ! getent group easyupd >/dev/null; then
+            groupadd -r easyupd
+        fi
+
+	# 2. Obtener de forma robusta el nombre del usuario real que invocó sudo
+        REAL_USER="${SUDO_USER}"
+        if [ -z "$REAL_USER" ] || [ "$REAL_USER" = "root" ]; then
+            REAL_USER=$(loginctl list-sessions --no-legend 2>/dev/null | awk '{print $2}' | xargs -I {} getent passwd {} 2>/dev/null | cut -d: -f1 | head -n1)
+            [ -z "$REAL_USER" ] && REAL_USER=$(who | awk '($NF ~ /:0|[0-9]/) {print $1; exit}')
+            [ -z "$REAL_USER" ] && REAL_USER="mark"
+        fi
+
+        # Agregar al grupo solo si el usuario existe y es un nombre válido
+        if [ -n "$REAL_USER" ] && [ "$REAL_USER" != "root" ] && id "$REAL_USER" >/dev/null 2>&1; then
+            usermod -aG easyupd "$REAL_USER" || true
+        fi
+
+        # 3. Crear directorio de caché y configurar permisos SGID
+        mkdir -p /var/cache/easyupd_lab
+        chown root:easyupd /var/cache/easyupd_lab
+        chmod 2775 /var/cache/easyupd_lab
+
+        for f in status pending_count pending_list auto_mode; do
+            [ ! -f "/var/cache/easyupd_lab/$f" ] && touch "/var/cache/easyupd_lab/$f"
+            chown root:easyupd "/var/cache/easyupd_lab/$f"
+            chmod 664 "/var/cache/easyupd_lab/$f"
+        done
+
+		# 3.1. Detección estática del backend de bandeja para optimizar recursos
+        DETECTED_DE="${XDG_CURRENT_DESKTOP:-$DESKTOP_SESSION}"
+        mkdir -p /var/cache/easyupd_lab
+        
+        if echo "$DETECTED_DE" | grep -qiE "GNOME|Unity|Budgie"; then
+            echo "FALLBACK_NOTIFY" > /var/cache/easyupd_lab/tray_backend
+        else
+            echo "NATIVE_TRAY" > /var/cache/easyupd_lab/tray_backend
+        fi
+        chown root:easyupd /var/cache/easyupd_lab/tray_backend
+        chmod 664 /var/cache/easyupd_lab/tray_backend
+
+		# 4. Detección inteligente de terminal compatible
+        TERMINALES_PREFERIDAS="xfce4-terminal lxterminal sakura terminator gnome-terminal mate-terminal"
+        TERMINAL_ELEGIDA=""
+
+        for term in $TERMINALES_PREFERIDAS; do
+            if command -v "$term" >/dev/null 2>&1; then
+                TERMINAL_ELEGIDA="$term"
+                break
+            fi
+        done
+
+        # Si ninguna existe, instalamos sakura como red de seguridad
+        if [ -z "$TERMINAL_ELEGIDA" ]; then
+            echo "[*] No se encontró ninguna terminal compatible preinstalada."
+            echo "[*] Instalando 'sakura' como terminal predeterminada para EasyUpd..."
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update && apt-get install -y sakura
+            TERMINAL_ELEGIDA="sakura"
+        fi
+
+        # Guardar la terminal elegida para que los lanzadores la consulten
+        echo "$TERMINAL_ELEGIDA" > /var/cache/easyupd_lab/terminal_preferida
+        chown root:easyupd /var/cache/easyupd_lab/terminal_preferida
+        chmod 664 /var/cache/easyupd_lab/terminal_preferida
+
+        echo "✔ Terminal configurada para EasyUpd: $TERMINAL_ELEGIDA"
+
+        # 5. Asignar permisos de ejecución a todos los scripts
+        chmod +x /usr/local/bin/easyupd_yad_lab.sh \
+                 /usr/local/bin/sysupd-daemon_lab.sh \
+                 /usr/local/bin/easyupd-tray_lab.sh \
+                 /usr/local/bin/easyupd-timeshift.sh \
+                 /usr/local/bin/easyupd-set-sleep.sh \
+                 /usr/local/bin/easyupd-toggle_lab.sh \
+                 /usr/local/bin/easyupd-restart_lab.sh \
+                 /usr/local/bin/easyupd-logview_lab.sh \
+                 /lib/systemd/system-sleep/easyupd-resume
+
+        # 6. Activar servicios
+        systemctl daemon-reload
+        systemctl enable --now atd.service >/dev/null 2>&1 || true
+        systemctl enable --now sysupd_lab.service >/dev/null 2>&1 || true
+    ;;
+esac
+
+exit 0
