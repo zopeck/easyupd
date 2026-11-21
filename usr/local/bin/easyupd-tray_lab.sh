@@ -229,7 +229,7 @@ if [ "$INIT_STATUS" = "UPDATING" ]; then
 elif [ "$INIT_STATUS" = "RED" ] || [ "$INIT_STATUS" = "CRITICAL" ]; then
     INIT_IMAGE="easyupd_red"
     if [ "$INIT_REASON" = "STRUCTURAL" ]; then
-        INIT_TEXT="⚠️ Modo Auto Suspendido: Requiere intervención."
+        INIT_TEXT="⚠️ Modo Auto Suspendido: Se requiere acción. Haga clic en el boton indicador."
     elif [ "$INIT_REASON" = "EXEC_ERROR" ]; then
         INIT_TEXT="❌ Error en el registro del sistema."
     else
@@ -366,7 +366,7 @@ while kill -0 "$YAD_PID" 2>/dev/null; do
                     CMD="sakura -c 120 -r 20 -f 'Ubuntu Mono Regular 14' -t 'EasyUpd - Actualizador' -e $SCRIPT_INTERNO"
                     
                     if [ "$CUR_REASON" = "STRUCTURAL" ]; then
-                        TEXT="⚠️ Modo Auto Suspendido: Se requiere acción."
+                        TEXT="⚠️ Modo Auto Suspendido: Se requiere acción. Haga clic en el boton indicador."
                     elif [ "$CUR_REASON" = "EXEC_ERROR" ]; then
                         TEXT="❌ La actualización terminó con errores."
                     else

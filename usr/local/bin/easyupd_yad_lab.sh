@@ -208,15 +208,16 @@ analizar_comportamiento_apt() {
 		sakura -c 120 -r 20 -f "Ubuntu Mono Regular 14" \
         -t "EasyUpd - Sincronización de Snapshot" \
         -e bash -c "
-            stdbuf -oL -eL sudo /usr/local/bin/easyupd-timeshift.sh --dispositivo '$CLEAN_DEV_TARGET'
+            stdbuf -oL -eL sudo /usr/local/bin/easyupd-timeshift.sh --dispositivo '$DEV_TARGET'
             EXIT_SNAP=\$?
             echo \$EXIT_SNAP > '$SNAP_STATUS_TMP'
             if [ \$EXIT_SNAP -eq 0 ]; then
                 echo -e '\n${green}✔ Snapshot consolidado con éxito.${nc}'
+            elif [ \$EXIT_SNAP -eq 2 ]; then
+                echo -e '\n${yellow}⚠ Respaldo NO confiable. Lea el detalle indicado arriba.${nc}'
             else
                 echo -e \"\n\${red}✖ El proceso finalizó con código de error: \$EXIT_SNAP\${nc}\"
-            fi
-            echo -e '${green}Cerrando ventana en 3 segundos...${nc}'
+            fi            echo -e '${green}Cerrando ventana en 3 segundos...${nc}'
             sleep 3
             exit 0
         "
@@ -227,14 +228,27 @@ analizar_comportamiento_apt() {
         if [ "$STATUS_SNAPSHOT" -eq 0 ]; then
             echo -e "\t✔ ${green}Snapshot consolidado con éxito.${nc}\n"
             sleep 1.5
+        elif [ "$STATUS_SNAPSHOT" -eq 2 ]; then
+            echo -e "\t❌ ${Bred}RESPALDO NO CONFIABLE${nc}"
+            echo -e "\tSe creó un snapshot, pero durante la copia se detectaron fallos en el disco."
+            echo -e "\t${yellow}No se puede garantizar que sirva para restaurar el sistema.${nc}"
+            echo -e "\tRecomendación: cancele, revise cable, puerto y disco, y repita el respaldo.\n"
+            echo -e "\tPara continuar de todos modos, SIN un respaldo confiable, escriba ${red}CONTINUAR${nc}."
+            echo -e -n "\tCualquier otra respuesta cancela la actualización: "
+            read -r CONFIRMA_RIESGO
+            if [ "$CONFIRMA_RIESGO" != "CONTINUAR" ]; then
+                echo -e "\n${yellow}Operación abortada. No se aplicaron cambios.${nc}"
+                exit 0
+            fi
         else
-            echo -e "\t❌ ${red}Error o cancelación en el proceso de respaldo externo.${nc}"
+            echo -e "\t❌ ${red}El respaldo NO se creó.${nc}"
+            echo -e "\t${yellow}No existe un respaldo válido previo a esta actualización.${nc}\n"
             echo -e -n "¿Desea abortar la actualización por seguridad? (${green}s${nc}/${red}n${nc}): "
             read -r -n 1 ABORTAR_ACT
             echo -e "\n"
             echo ""
             if [ "$ABORTAR_ACT" = "s" ] || [ -z "$ABORTAR_ACT" ]; then
-                echo -e "${yellow}Operación abortada por el usuario. No se applied cambios.${nc}"
+                echo -e "${yellow}Operación abortada por el usuario. No se aplicaron cambios.${nc}"
                 exit 0
             fi
         fi
@@ -764,8 +778,8 @@ bash_colors
 source /usr/local/bin/easyupd/check_os_family
 if ! check_os_family; then exit 1; fi
 
-source /usr/local/bin/easyupd/check_apt_lock
-if ! check_apt_lock; then exit 1; fi
+source /usr/local/bin/easyupd/check_pkg_lock
+if ! check_pkg_lock; then exit 1; fi
 
 validar_dimensiones
 

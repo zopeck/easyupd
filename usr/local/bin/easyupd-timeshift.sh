@@ -2,7 +2,7 @@
 # ==============================================================================
 # Nombre: easyupd-timeshift.sh
 # Descripción: Módulo de actualización del sistema y gestión inteligente de Timeshift
-# Autor: Mark / Charlie (Co-Pilot)
+# Autor: Mark zopeck@gmail.com
 # Fecha: 25 Octubre 2026
 # ==============================================================================
 
@@ -24,8 +24,23 @@ green='\033[0;32m'
 yellow='\033[1;33m'
 nc='\033[0m'
 
-REAL_USER=${SUDO_USER:-$USER}
-USER_ID=$(id -u "$REAL_USER" 2>/dev/null)
+REAL_USER=${SUDO_USER:-}
+
+# Si SUDO_USER es root o está vacío, el dueño del tray es, por definición, el usuario de la sesión
+if [ -z "$REAL_USER" ] || [ "$REAL_USER" = "root" ]; then
+    TRAY_PID_OWNER=$(pgrep -f "easyupd-tray_lab.sh" | head -n 1 || true)
+    if [ -n "$TRAY_PID_OWNER" ]; then
+        REAL_USER=$(ps -o user= -p "$TRAY_PID_OWNER" 2>/dev/null | tr -d ' ' || true)
+    fi
+fi
+
+# Último recurso: primera sesión de loginctl que no sea root
+if [ -z "$REAL_USER" ] || [ "$REAL_USER" = "root" ]; then
+    REAL_USER=$(loginctl list-sessions --no-legend 2>/dev/null | awk '$3 != "root" {print $3; exit}' || true)
+fi
+
+REAL_USER="${REAL_USER:-${USER:-root}}"
+USER_ID=$(id -u "$REAL_USER" 2>/dev/null || true)
 
 CACHE_DIR="/var/cache/easyupd_lab"
 DISKS_REGISTRY="${CACHE_DIR}/snapshot_disks"
@@ -77,12 +92,13 @@ notificar() {
     if [ -n "$USER_ID" ]; then
         if [ "$EUID" -eq 0 ]; then
             sudo -u "$REAL_USER" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_ID/bus" \
-                notify-send -i "$icono" "$titulo" "$mensaje" 2>/dev/null
+                notify-send -i "$icono" "$titulo" "$mensaje" 2>/dev/null || true
         else
             DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$USER_ID/bus" \
-                notify-send -i "$icono" "$titulo" "$mensaje" 2>/dev/null
+                notify-send -i "$icono" "$titulo" "$mensaje" 2>/dev/null || true
         fi
     fi
+    return 0
 }
 
 if ! flock -n 200; then
@@ -383,8 +399,8 @@ if [ "${#PROBLEMAS[@]}" -eq 0 ]; then
     chmod 664 "${CACHE_DIR}/easyupd_last_snapshot" 2>/dev/null || true
 
     # Forzar actualización instantánea del tooltip en el tray
-    TRAY_PID=$(pgrep -u "$REAL_USER" -f "easyupd-tray_lab.sh" | head -n 1)
-    [ -n "$TRAY_PID" ] && kill -SIGUSR2 "$TRAY_PID" 2>/dev/null
+    TRAY_PID=$(pgrep -f "easyupd-tray_lab.sh" | head -n 1 || true)
+    [ -n "$TRAY_PID" ] && { kill -SIGUSR2 "$TRAY_PID" 2>/dev/null || true; }
     # ---------------------------------------------
 
     notificar "document-save" "EasyUpd - Timeshift" "El Snapshot preventivo se creó y verificó correctamente."
@@ -401,6 +417,24 @@ done
 
 cp -f "$TS_LOG" /var/log/easyupd_timeshift_last.log 2>/dev/null \
     && echo -e "\n${yellow}Salida completa guardada en /var/log/easyupd_timeshift_last.log${nc}"
+
+if [ -n "$SNAP_NUEVO" ]; then
+    # El snapshot existe, pero hay dudas sobre su integridad: NO es confiable.
+    echo -e "\n${red}══════════════════════════════════════════════════════${nc}"
+    echo -e "${red}  RESPALDO NO CONFIABLE: NO lo use como garantía${nc}"
+    echo -e "${red}══════════════════════════════════════════════════════${nc}"
+    echo -e "${yellow}Timeshift terminó de copiar y puede haber mostrado un aviso de éxito."
+    echo -e "Ese aviso solo indica que el programa finalizó, no que los datos sean íntegros."
+    echo -e "Durante la copia se detectaron problemas (ver detalle arriba), por lo que"
+    echo -e "NO se puede garantizar que el snapshot ${SNAP_NUEVO} sirva para restaurar el sistema.${nc}"
+    echo -e "\n${yellow}Qué hacer:${nc}"
+    echo -e "  1. Cambia el cable USB por uno más corto o prueba otro puerto."
+    echo -e "  2. Si el disco no tiene fuente propia, usa un hub USB alimentado."
+    echo -e "  3. Repite el respaldo. Si el aviso reaparece, revisa la salud del disco."
+    notificar "dialog-warning" "EasyUpd - Timeshift" "Respaldo NO confiable: se detectaron fallos durante la copia."
+    esperar_enter
+    exit 2
+fi
 
 notificar "dialog-error" "EasyUpd - Timeshift" "El snapshot FALLÓ o quedó incompleto. Revisa la consola."
 esperar_enter

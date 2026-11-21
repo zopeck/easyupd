@@ -20,7 +20,7 @@ INICIO="$(cat /proc/1/comm)"
 [ "$INICIO" != "systemd" ] && { echo "El sistema no es compatible con systemd, saliendo..."; sleep 3; exit 1; }
 
 [ -f /usr/local/bin/easyupd/check_internet ] && source /usr/local/bin/easyupd/check_internet
-[ -f /usr/local/bin/easyupd/check_apt_lock ] && source /usr/local/bin/easyupd/check_apt_lock
+[ -f /usr/local/bin/easyupd/check_pkg_lock ] && source /usr/local/bin/easyupd/check_pkg_lock
 [ -f /usr/local/bin/easyupd/sleep_time ] && source /usr/local/bin/easyupd/sleep_time
 
 SLEEP_TIME=${SLEEP_TIME:-10800}
@@ -167,14 +167,14 @@ while true; do
         fi
     fi
 
-    if type check_apt_lock &>/dev/null && ! check_apt_lock; then
+    if type check_pkg_lock &>/dev/null && ! check_pkg_lock; then
         sleep 30
         continue
     fi
 
     # apt-get update -qq
 
-	if type check_apt_lock &>/dev/null && ! check_apt_lock; then
+	if type check_pkg_lock &>/dev/null && ! check_pkg_lock; then
         # APT está ocupado por Synaptic, dpkg u otra terminal.
         # Esperamos un lapso corto y reintentamos en la siguiente iteración sin alterar el next_check.
         sleep 30

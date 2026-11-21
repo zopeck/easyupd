@@ -1,0 +1,59 @@
+# NOTA IMPORTANTE!:
+# El comando FUSER, devuelve "1" si su ocupacion es "falsa", por el contrario
+# devuelve "0" cuando el sistema de paquetes esta siendo utilizado por el
+# sistema y por lo tanto, bloqueado, por lo que el sistema no nos va a dejar
+# correr el "EasyUpd"
+
+# check_pkg_lock - Verifica si el gestor de paquetes (APT o Pacman) está en uso
+
+# Cargar funciones o variables comunes si existen
+COLOR_SCRIPT="${BASH_SOURCE%/*}/bash_colors"
+[ -f "$COLOR_SCRIPT" ] && source "$COLOR_SCRIPT"
+
+# Detectar la familia de SO leyendo /etc/os-release
+# Library: check_pkg_lock
+# Retorna 0 si el gestor de paquetes está libre, 1 si está bloqueado/ocupado.
+
+check_pkg_lock() {
+    local os_family=""
+    
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+            arch|manjaro|endeavouros|garuda)
+                os_family="arch"
+                ;;
+            debian|sparky|ubuntu|mint|mx)
+                os_family="debian"
+                ;;
+            *)
+                if [[ "$ID_LIKE" =~ "arch" ]]; then
+                    os_family="arch"
+                elif [[ "$ID_LIKE" =~ "debian" || "$ID_LIKE" =~ "ubuntu" ]]; then
+                    os_family="debian"
+                else
+                    os_family="debian"
+                fi
+                ;;
+        esac
+    else
+        os_family="debian"
+    fi
+
+    case "$os_family" in
+        arch)
+            # Pacman usa el cerrojo db.lck
+            if [ -f /var/lib/pacman/db.lck ]; then
+                return 1
+            fi
+            ;;
+        debian|*)
+            # APT / dpkg usan los cierres en /var/lib/
+            if [ -f /var/lib/dpkg/lock-frontend ] || [ -f /var/lib/apt/lists/lock ] || [ -f /var/lib/dpkg/lock ]; then
+                return 1
+            fi
+            ;;
+    esac
+
+    return 0
+}
